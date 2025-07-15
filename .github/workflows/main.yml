@@ -33,7 +33,7 @@ jobs:
           HASH=$(md5sum "$FILE" | cut -d' ' -f1)
           NEW_FILE="${FILE%.*}_${HASH}.${FILE##*.}"
           sudo mv "$FILE" "$NEW_FILE"
-          ITEM_ID="${NEW_FILE%.*}"
+          ITEM_ID="$(basename "$NEW_FILE" .iso)"
           DOWNLOAD_URL="https://archive.org/download/$ITEM_ID/$NEW_FILE"
           echo "file=$NEW_FILE" >> "$GITHUB_OUTPUT"
           echo "tag=$HASH" >> "$GITHUB_OUTPUT"
