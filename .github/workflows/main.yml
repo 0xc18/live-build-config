@@ -1,0 +1,63 @@
+name: Build and Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Fetch repo
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      # 2. Packages required to build, hash, and upload
+      - name: Install build dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y git simple-cdd cdebootstrap curl p7zip python3-pip
+          pip3 install --quiet internetarchive   # gives us the `ia` CLI
+
+      # 3. Add Kali keyring + live-build (unchanged logic)
+      - name: Install Kali keyring & live-build
+        run: |
+          wget -q https://http.kali.org/pool/main/k/kali-archive-keyring/kali-archive-keyring_2025.1_all.deb
+          wget -q https://http.kali.org/pool/main/l/live-build/live-build_20250505%2Bkali1_all.deb
+          sudo apt install -y ./live-build_*_all.deb ./kali-archive-keyring_*_all.deb
+
+      # 4. Build the ISO/image (unchanged logic)
+      - name: Build ISO image
+        run: sudo ./build.sh --verbose --variant custom
+
+      # 5. Compute MD5, rename file, and expose hash + filename + IA item id
+      - name: Compute MD5 & rename artifact
+        id: md5
+        run: |
+          FILE=$(ls images/*.iso | head -n1)                     # first matching build artifact
+          HASH=$(md5sum "$FILE" | cut -d' ' -f1)             # md5 hash only
+          NEW_FILE="${FILE%.*}_${HASH}.${FILE##*.}"          # append hash before extension
+          mv "$FILE" "$NEW_FILE"
+          ITEM_ID="${NEW_FILE%.*}"                           # IA identifiers cannot contain '.'
+          echo "file=$NEW_FILE"  >> "$GITHUB_OUTPUT"
+          echo "tag=$HASH"      >> "$GITHUB_OUTPUT"
+          echo "item=$ITEM_ID"  >> "$GITHUB_OUTPUT"
+
+      # 6. Upload the image to Internet Archive
+      - name: Upload to Internet Archive
+        env:
+          IA_ACCESS_KEY: ${{ secrets.IA_ACCESS_KEY }}
+          IA_SECRET_KEY: ${{ secrets.IA_SECRET_KEY }}
+        run: |
+          ia upload "${{ steps.md5.outputs.item }}" "${{ steps.md5.outputs.file }}" \
+            --metadata="title=${{ steps.md5.outputs.file }}" \
+            --metadata="mediatype=data"
+
+      # 7. Publish a GitHub release using the MD5 hash as the tag
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: "${{ steps.md5.outputs.tag }}"
+          files: "${{ steps.md5.outputs.file }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

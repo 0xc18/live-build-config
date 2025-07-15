@@ -1,0 +1,3 @@
+#!/bin/sh
+apt -y remove desktop-base tango-icon-theme xorg texlive-latex-extra wordlists
+apt -y autoremove
