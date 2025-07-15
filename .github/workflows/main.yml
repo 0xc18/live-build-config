@@ -32,7 +32,7 @@ jobs:
           FILE=$(ls images/*.iso | head -n1)
           HASH=$(md5sum "$FILE" | cut -d' ' -f1)
           NEW_FILE="${FILE%.*}_${HASH}.${FILE##*.}"
-          mv "$FILE" "$NEW_FILE"
+          sudo mv "$FILE" "$NEW_FILE"
           ITEM_ID="${NEW_FILE%.*}"
           DOWNLOAD_URL="https://archive.org/download/$ITEM_ID/$NEW_FILE"
           echo "file=$NEW_FILE" >> "$GITHUB_OUTPUT"
