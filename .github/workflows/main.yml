@@ -27,13 +27,7 @@ jobs:
       - name: Install build dependencies
         run: |
           apt update
-          apt install -y git simple-cdd cdebootstrap p7zip python3-pip wget python-internetarchive
-
-      - name: Install Kali keyring & live-build
-        run: |
-          wget -q https://http.kali.org/pool/main/k/kali-archive-keyring/kali-archive-keyring_2025.1_all.deb
-          wget -q https://http.kali.org/pool/main/l/live-build/live-build_20250505%2Bkali1_all.deb
-          apt install -y ./live-build_*_all.deb ./kali-archive-keyring_*_all.deb
+          apt install -y git simple-cdd cdebootstrap p7zip wget  live-build python-internetarchive
 
       - name: Build ISO image
         run: |
