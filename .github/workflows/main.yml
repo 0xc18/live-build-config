@@ -55,7 +55,7 @@ jobs:
 
       - name: Upload file to archive.org
         if: success()
-        run: python ./upload.py
+        run: python3 ./upload.py
         env:
           access-key: ${{ secrets.IA_ACCESS_KEY }}
           secret-key: ${{ secrets.IA_SECRET_KEY }}
