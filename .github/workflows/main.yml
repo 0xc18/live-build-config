@@ -55,8 +55,8 @@ jobs:
 
       - name: Upload file to archive.org
         if: success()
-        uses: palewire/internet-archive-upload@v1
-        with:
+        run: python ./upload.py
+        env:
           access-key: ${{ secrets.IA_ACCESS_KEY }}
           secret-key: ${{ secrets.IA_SECRET_KEY }}
           identifier: unofficial_kali_images
