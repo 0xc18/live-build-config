@@ -27,7 +27,7 @@ jobs:
       - name: Install build dependencies
         run: |
           apt update
-          apt install -y git simple-cdd cdebootstrap p7zip wget  live-build python-internetarchive
+          apt install -y git simple-cdd cdebootstrap p7zip wget  live-build internetarchive
 
       - name: Build ISO image
         run: |
