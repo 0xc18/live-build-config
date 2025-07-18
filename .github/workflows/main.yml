@@ -5,27 +5,41 @@ on:
 
 jobs:
   build-and-release:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
+
+    container:
+      image: kalilinux/kali-rolling
+      options: --privileged  # live-build needs privileges
 
     steps:
+      - name: Install GitHub Actions dependencies (core packages)
+        run: |
+          apt update
+          apt install -y sudo curl gnupg ca-certificates
+
+      - name: Add sudo user workaround for container
+        run: |
+          echo 'github ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
       - name: Checkout source
         uses: actions/checkout@v3
 
       - name: Install build dependencies
         run: |
-          sudo apt update
-          sudo apt install -y git simple-cdd cdebootstrap curl p7zip python3-pip
+          apt update
+          apt install -y git simple-cdd cdebootstrap p7zip python3-pip wget
           pip3 install --quiet internetarchive
 
       - name: Install Kali keyring & live-build
         run: |
           wget -q https://http.kali.org/pool/main/k/kali-archive-keyring/kali-archive-keyring_2025.1_all.deb
           wget -q https://http.kali.org/pool/main/l/live-build/live-build_20250505%2Bkali1_all.deb
-          sudo apt install -y ./live-build_*_all.deb ./kali-archive-keyring_*_all.deb
+          apt install -y ./live-build_*_all.deb ./kali-archive-keyring_*_all.deb
 
       - name: Build ISO image
-        run: sudo ./build.sh --verbose --variant xfce-light
-
+        run: |
+          ./build.sh --verbose --variant xfce-light
+        continue-on-error: true
 
       - name: Upload build log even on failure
         if: always()
@@ -34,22 +48,20 @@ jobs:
           name: build-log
           path: ./build.log
 
-
-
       - name: Compute MD5 & rename artifact
+        if: success()
         id: md5
         run: |
           FILE=$(ls images/*.iso | head -n1)
           HASH=$(md5sum "$FILE" | cut -d' ' -f1)
           NEW_FILE="${FILE%.*}_${HASH}.${FILE##*.}"
-          sudo mv "$FILE" "$NEW_FILE"
-          DOWNLOAD_URL="https://archive.org/download/unofficial_kali_images/$NEW_FILE"
+          mv "$FILE" "$NEW_FILE"
           echo "file=$NEW_FILE" >> "$GITHUB_OUTPUT"
           echo "tag=$HASH" >> "$GITHUB_OUTPUT"
-          echo "item=$ITEM_ID" >> "$GITHUB_OUTPUT"
-          echo "url=$DOWNLOAD_URL" >> "$GITHUB_OUTPUT"
+          echo "url=https://archive.org/download/unofficial_kali_images/$NEW_FILE" >> "$GITHUB_OUTPUT"
 
       - name: Upload file to archive.org
+        if: success()
         uses: palewire/internet-archive-upload@v1
         with:
           access-key: ${{ secrets.IA_ACCESS_KEY }}
@@ -57,8 +69,8 @@ jobs:
           identifier: unofficial_kali_images
           files: images/
 
-
       - name: Create GitHub Release with IA URL
+        if: success()
         uses: softprops/action-gh-release@v1
         with:
           tag_name: "${{ steps.md5.outputs.tag }}"
