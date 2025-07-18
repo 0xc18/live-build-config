@@ -26,6 +26,16 @@ jobs:
       - name: Build ISO image
         run: sudo ./build.sh --verbose --variant xfce-light
 
+
+      - name: Upload build log even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: ./build.log
+
+
+
       - name: Compute MD5 & rename artifact
         id: md5
         run: |
