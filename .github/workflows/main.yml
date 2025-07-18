@@ -51,16 +51,17 @@ jobs:
           mv "$FILE" "$NEW_FILE"
           echo "file=$NEW_FILE" >> "$GITHUB_OUTPUT"
           echo "tag=$HASH" >> "$GITHUB_OUTPUT"
-          echo "url=https://archive.org/download/unofficial_kali_images/$NEW_FILE" >> "$GITHUB_OUTPUT"
+          echo "url=https://archive.org/download/unofficial-kali-live-images/$NEW_FILE" >> "$GITHUB_OUTPUT"
 
       - name: Upload file to archive.org
         if: success()
-        run: python3 ./upload.py
         env:
-          access-key: ${{ secrets.IA_ACCESS_KEY }}
-          secret-key: ${{ secrets.IA_SECRET_KEY }}
-          identifier: unofficial_kali_images
-          files: images/
+          user: ${{ secrets.USERNAME }}
+          pass: ${{ secrets.PASSWORD }}
+          identifier: unofficial-kali-live-images
+        run: |
+          ia co -u $user -p $pass
+          ia upload unofficial-kali-live-images images/*.iso
 
       - name: Create GitHub Release with IA URL
         if: success()
